@@ -1,0 +1,31 @@
+{
+  "name": "prediqt_telegram_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node -r esm bot.js",
+    "dev": "nodemon -r esm bot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dfuse/client": "^0.3.17",
+    "dotenv": "^8.2.0",
+    "esm": "^3.2.25",
+    "lodash": "^4.17.20",
+    "node-fetch": "^2.6.1",
+    "nodemon": "^2.0.6",
+    "pg": "^8.5.1",
+    "telegraf": "^3.38.0",
+    "telegraf-inline-menu": "^5.3.0",
+    "telegram-keyboard": "^2.1.7",
+    "ws": "^7.4.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.16.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.22.1"
+  }
+}
