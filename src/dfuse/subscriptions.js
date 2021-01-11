@@ -1,14 +1,6 @@
-import { createDfuseClient } from '@dfuse/client';
-import { getAllUserChatIds } from './db';
+import { getAllUserChatIds } from '../db';
+import dfuseClient from './client';
 
-require('dotenv').config();
-global.fetch = require('node-fetch');
-global.WebSocket = require('ws');
-
-const dfuseClient = createDfuseClient({
-  apiKey: process.env.DFUSE_API_KEY,
-  network: process.env.DFUSE_NETWORK,
-});
 export const subscribtomarkets = async (bot) => {
   const streamPredIQt = `subscription($cursor: String!) {
     searchTransactionsForward(query: "receiver:prediqtpedia (action:propmarket OR action:createmarket OR action:mktresolve OR action:mktinvalid OR action:acceptmarket OR action:rejectmarket)", cursor: $cursor) {
@@ -30,6 +22,8 @@ export const subscribtomarkets = async (bot) => {
 
   try {
     const stream2 = await dfuseClient.graphql(streamPredIQt, async (message) => {
+      // eslint-disable-next-line no-console
+      console.log('Data Reterived');
       if (message.type === 'error') {
         // eslint-disable-next-line no-console
         console.error('An error occurred', message.errors, message.terminal);
@@ -117,11 +111,11 @@ export const subscribtomarkets = async (bot) => {
             console.info(msg);
           }
         });
-      }
 
-      stream2.mark({
-        cursor: data.cursor,
-      });
+        stream2.mark({
+          cursor: data.cursor,
+        });
+      }
       // }
 
       if (message.type === 'complete') {
@@ -130,6 +124,7 @@ export const subscribtomarkets = async (bot) => {
       }
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error(error);
   }
 };

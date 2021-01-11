@@ -1,6 +1,7 @@
 import { session, Telegraf } from 'telegraf';
 import actions from './src/actions';
-import { subscribtomarkets } from './src/subscriptions';
+
+import { subscribtomarkets } from './src/dfuse/subscriptions';
 
 require('dotenv').config();
 

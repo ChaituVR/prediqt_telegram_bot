@@ -1,4 +1,5 @@
 import { createUser, getSubscriptionsById, updateUserSubscription } from './db';
+import { checkForAccount } from './dfuse/queries';
 import {
   cancelKeyboard, mainMenuKeyboard, makeInlineSubscriptionsList, secondaryKeyboard,
 } from './keyboard';
@@ -52,9 +53,14 @@ export const cancelAddition = async (ctx) => {
 
 export const updateSubscription = async (ctx) => {
   try {
-    await updateUserSubscription(ctx.from.id, 'add', ctx.message.text);
-    ctx.session.enteredNewAccountCreation = false;
-    ctx.reply(`Successfully subscribed to account ${ctx.message.text}`, secondaryKeyboard.reply());
+    const accountExist = await checkForAccount(ctx.message.text);
+    if (accountExist) {
+      await updateUserSubscription(ctx.from.id, 'add', ctx.message.text);
+      ctx.session.enteredNewAccountCreation = false;
+      ctx.reply(`Successfully subscribed to account ${ctx.message.text}`, secondaryKeyboard.reply());
+    } else {
+      ctx.reply('Account Doesn\'t exist on this network, please try with different account');
+    }
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error);
