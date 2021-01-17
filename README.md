@@ -25,6 +25,9 @@ To get a local copy up and running follow these simple steps.
 
 ### Installation
 
+Prerequisites node >= 12 npm >= 6 
+
+
 1. Clone the repo
 
    ```sh

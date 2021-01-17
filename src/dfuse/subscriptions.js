@@ -7,7 +7,7 @@ import dfuseClient from './client';
 // eslint-disable-next-line import/prefer-default-export
 export const subscribeToDfuse = async (bot) => {
   const streamPredIQt = `subscription($cursor: String!) {
-    searchTransactionsForward(query: "receiver:prediqtpedia (action:propmarket OR action:createmarket OR action:mktresolve OR action:mktinvalid OR action:acceptmarket OR action:rejectmarket OR action:lmtorderyes OR action:lmtorderno OR action:claimshares)", cursor: $cursor) {
+    searchTransactionsForward(query: "receiver:prediqtpedia (action:propmarket OR action:createmarket OR action:mktend OR action:mktresolve OR action:mktinvalid OR action:acceptmarket OR action:rejectmarket OR action:lmtorderyes OR action:lmtorderno OR action:claimshares)", cursor: $cursor) {
         undo cursor
         trace {
             block {
@@ -68,6 +68,12 @@ export const subscribeToDfuse = async (bot) => {
               sharetype,
             } = json;
             msg = `☄️ Market Resolved by: ${resolver}, Result: ${sharetype ? 'YES' : 'NO'}, Link: ${process.env.PUBLIC_URL}/market/${marketId}`;
+          } else if (name === 'mktend') {
+            const {
+              market_id: marketId,
+              sharetype,
+            } = json;
+            msg = `☄️ Market Ended. \n\n Result: ${sharetype ? 'YES' : 'NO'}, Link: ${process.env.PUBLIC_URL}/market/${marketId}`;
           } else if (name === 'mktinvalid') {
             const {
               market_id: marketId,
@@ -117,6 +123,7 @@ export const subscribeToDfuse = async (bot) => {
               });
             });
             // If an order is filled
+            // eslint-disable-next-line consistent-return
             dbOps.forEach(async (dpOp) => {
               if (dpOp.newJSON.object) {
                 const { creator, isbid } = dpOp.newJSON.object;
@@ -136,8 +143,7 @@ export const subscribeToDfuse = async (bot) => {
                 }
               }
             });
-          }
-          else if (name === 'claimshares') {
+          } else if (name === 'claimshares') {
             const {
               user,
               market_id: marketId,
@@ -164,8 +170,12 @@ export const subscribeToDfuse = async (bot) => {
         console.log('Stream completed');
       }
     });
+    // eslint-disable-next-line no-console
+    console.log('Subscribed to dfuse api successfully');
+    return bot;
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error);
   }
+  return bot;
 };

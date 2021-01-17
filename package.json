@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "bot.js",
+  "engines": {
+    "node": ">=12"
+  },
   "scripts": {
     "start": "node -r esm bot.js",
     "dev": "nodemon -r esm bot.js",

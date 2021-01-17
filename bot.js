@@ -5,16 +5,18 @@ import { subscribeToDfuse } from './src/dfuse/subscriptions';
 
 require('dotenv').config();
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+let bot = new Telegraf(process.env.BOT_TOKEN);
 
 bot.use(Telegraf.log());
 bot.use(session());
-subscribeToDfuse(bot);
-actions(bot);
-bot.launch();
+(async () => {
+  bot = await subscribeToDfuse(bot);
+  actions(bot);
+  bot.launch();
+  // eslint-disable-next-line no-console
+  console.log('Server started and listening to Telegram');
+})();
 
-// eslint-disable-next-line no-console
-console.log('Server started and listening to Telegram');
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
