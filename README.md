@@ -42,4 +42,10 @@ To get a local copy up and running follow these simple steps.
 
     ```sh
     cp .env.example .env
+    nano .env
+    ```
+4. Start server
+
+    ```sh
+    npm start
     ```
