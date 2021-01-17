@@ -5,8 +5,8 @@ global.fetch = require('node-fetch');
 global.WebSocket = require('ws');
 
 const dfuseClient = createDfuseClient({
-  apiKey: process.env.DFUSE_API_KEY,
-  network: process.env.network === 'kylin' ? process.env.KYLIN_NETWOR : process.env.DFUSE_NETWORK,
+  authentication: false,
+  network: process.env.NETWORK === 'kylin' ? 'kylin.dfuse.eosnation.io' : 'eos.dfuse.eosnation.io',
 });
 
 export default dfuseClient;
