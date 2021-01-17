@@ -35,7 +35,7 @@ To get a local copy up and running follow these simple steps.
 
    ```sh
    cd prediqt_telegram_bot
-   yarn install
+   npm install
    ```
 
 3. Edit `.env` file with bot keys and dfuse api keys
