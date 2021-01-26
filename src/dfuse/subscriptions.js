@@ -16,7 +16,10 @@ export const subscribeToDfuse = async (bot) => {
             matchingActions {
                 name json dbOps {
                     newJSON {
-                        object
+                      object
+                    }
+                    oldJSON {
+                      object
                     }
                 }
             }
@@ -129,11 +132,24 @@ export const subscribeToDfuse = async (bot) => {
                 const { creator, isbid } = dpOp.newJSON.object;
                 if (creator && isbid) {
                   const sharesRemaining = dpOp.newJSON.object.shares;
-                  // If it is a first order
-                  if (creator === user && sharesRemaining === shares) {
+                  // First order
+                  if (!dpOp.oldJSON.object || dpOp.oldJSON.object.creator !== creator) {
                     return false;
                   }
                   msg = `✅️ Order filled with ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${process.env.PUBLIC_URL}/market/${marketId}\nNumber of shares bought: ${shares / 1000}\nNumber of shares pending: ${sharesRemaining ? (sharesRemaining / 1000) : 0}`;
+                  const creatorsSubscribed = await getSubscribedUserChatIds(creator);
+                  creatorsSubscribed.forEach((id) => {
+                    bot.telegram.sendMessage(id, msg, {
+                      disable_web_page_preview: true,
+                    });
+                  });
+                }
+              } else if (dpOp.oldJSON.object) {
+                // if order is fully filled
+                const { creator, isbid } = dpOp.oldJSON.object;
+                if (creator && isbid) {
+                  const sharesFilled = dpOp.oldJSON.object.shares;
+                  msg = `✅️ Order completely filled with ${sharesFilled / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${process.env.PUBLIC_URL}/market/${marketId}\nNumber of shares filled: ${sharesFilled / 1000}\nNumber of shares pending: 0`;
                   const creatorsSubscribed = await getSubscribedUserChatIds(creator);
                   creatorsSubscribed.forEach((id) => {
                     bot.telegram.sendMessage(id, msg, {
