@@ -4,6 +4,8 @@ import {
 } from '../db';
 import dfuseClient from './client';
 
+const URL = process.env.NETWORK === 'kylin' ? process.env.PUBLIC_URL_KYLIN : process.env.PUBLIC_URL;
+
 // eslint-disable-next-line import/prefer-default-export
 export const subscribeToDfuse = async (bot) => {
   const streamPredIQt = `subscription($cursor: String!) {
@@ -55,7 +57,7 @@ export const subscribeToDfuse = async (bot) => {
             } = json;
             const marketId = dbOps[1].newJSON.object.id;
             if (marketId) {
-              msg = `✅️ Market Created [ Resolver: ${resolver}, Id: ${marketId}], URL: ${process.env.PUBLIC_URL}/market/${marketId} ]`;
+              msg = `✅️ Market Created [ Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
             }
           } else if (name === 'createmarket') {
             const {
@@ -70,31 +72,31 @@ export const subscribeToDfuse = async (bot) => {
               market_id: marketId,
               sharetype,
             } = json;
-            msg = `☄️ Market Resolved by: ${resolver}, Result: ${sharetype ? 'YES' : 'NO'}, Link: ${process.env.PUBLIC_URL}/market/${marketId}`;
+            msg = `☄️ Market Resolved by: ${resolver}, Result: ${sharetype ? 'YES' : 'NO'}, Link: ${URL}/market/${marketId}`;
           } else if (name === 'mktend') {
             const {
               market_id: marketId,
               sharetype,
             } = json;
-            msg = `☄️ Market Ended. \n\n Result: ${sharetype ? 'YES' : 'NO'}, Link: ${process.env.PUBLIC_URL}/market/${marketId}`;
+            msg = `☄️ Market Ended. \n\n Result: ${sharetype ? 'YES' : 'NO'}, Link: ${URL}/market/${marketId}`;
           } else if (name === 'mktinvalid') {
             const {
               market_id: marketId,
               memo,
             } = json;
-            msg = `🥀️ Market Invalid [ Id: ${marketId}, Memo: ${memo}, URL: ${process.env.PUBLIC_URL}/market/${marketId} ]`;
+            msg = `🥀️ Market Invalid [ Id: ${marketId}, Memo: ${memo}, URL: ${URL}/market/${marketId} ]`;
           } else if (name === 'acceptmarket') {
             const {
               resolver,
               market_id: marketId,
             } = json;
-            msg = `✅️ Market Accepted [ Resolver: ${resolver}, Id: ${marketId}], URL: ${process.env.PUBLIC_URL}/market/${marketId} ]`;
+            msg = `✅️ Market Accepted [ Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
           } else if (name === 'rejectmarket') {
             const {
               resolver,
               market_id: marketId,
             } = json;
-            msg = `❌️ Market Rejected [ Resolver: ${resolver}, Id: ${marketId}], URL: ${process.env.PUBLIC_URL}/market/${marketId} ]`;
+            msg = `❌️ Market Rejected [ Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
           }
 
           if (msg) {
@@ -118,7 +120,7 @@ export const subscribeToDfuse = async (bot) => {
               market_id: marketId,
               shares,
             } = json;
-            msg = `✅️ Order placed to "${buy ? 'Buy' : 'Sell'}" ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nMarket URL: ${process.env.PUBLIC_URL}/market/${marketId}\nReferral by: ${referral},\nNumber of Shares: ${shares / 1000}`;
+            msg = `✅️ Order placed to "${buy ? 'Buy' : 'Sell'}" ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nMarket URL: ${URL}/market/${marketId}\nReferral by: ${referral},\nNumber of Shares: ${shares / 1000}`;
             const chatIdsSubscribed = await getSubscribedUserChatIds(user);
             chatIdsSubscribed.forEach((id) => {
               bot.telegram.sendMessage(id, msg, {
@@ -136,7 +138,7 @@ export const subscribeToDfuse = async (bot) => {
                   if (!dpOp.oldJSON.object || dpOp.oldJSON.object.creator !== creator) {
                     return false;
                   }
-                  msg = `✅️ Order filled with ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${process.env.PUBLIC_URL}/market/${marketId}\nNumber of shares bought: ${shares / 1000}\nNumber of shares pending: ${sharesRemaining ? (sharesRemaining / 1000) : 0}`;
+                  msg = `✅️ Order filled with ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares bought: ${shares / 1000}\nNumber of shares pending: ${sharesRemaining ? (sharesRemaining / 1000) : 0}`;
                   const creatorsSubscribed = await getSubscribedUserChatIds(creator);
                   creatorsSubscribed.forEach((id) => {
                     bot.telegram.sendMessage(id, msg, {
@@ -149,7 +151,7 @@ export const subscribeToDfuse = async (bot) => {
                 const { creator, isbid } = dpOp.oldJSON.object;
                 if (creator && isbid) {
                   const sharesFilled = dpOp.oldJSON.object.shares;
-                  msg = `✅️ Order completely filled with ${sharesFilled / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${process.env.PUBLIC_URL}/market/${marketId}\nNumber of shares filled: ${sharesFilled / 1000}\nNumber of shares pending: 0`;
+                  msg = `✅️ Order completely filled with ${sharesFilled / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares filled: ${sharesFilled / 1000}\nNumber of shares pending: 0`;
                   const creatorsSubscribed = await getSubscribedUserChatIds(creator);
                   creatorsSubscribed.forEach((id) => {
                     bot.telegram.sendMessage(id, msg, {
@@ -164,7 +166,7 @@ export const subscribeToDfuse = async (bot) => {
               user,
               market_id: marketId,
             } = json;
-            msg = `Shares are Claimed/Burned for Market ${process.env.PUBLIC_URL}/market/${marketId} and sent to account ${user}`;
+            msg = `Shares are Claimed/Burned for Market ${URL}/market/${marketId} and sent to account ${user}`;
             const chatIdsSubscribed = await getSubscribedUserChatIds(user);
             chatIdsSubscribed.forEach((id) => {
               bot.telegram.sendMessage(id, msg, {

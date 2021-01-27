@@ -52,3 +52,8 @@ Prerequisites node >= 12 npm >= 6
     ```sh
     npm start
     ```
+5. Start server for development
+
+    ```sh
+    npm run dev
+    ```
