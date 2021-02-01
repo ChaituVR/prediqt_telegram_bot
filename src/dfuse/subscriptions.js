@@ -10,14 +10,17 @@ import dfuseClient from './client';
 const URL = process.env.NETWORK === 'kylin' ? process.env.PUBLIC_URL_KYLIN : process.env.PUBLIC_URL;
 
 const getMarketParticipants = async (marketId) => {
-  const shares = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId), 'shares');
-  const lmtorderyes = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId), 'lmtorderyes');
-  const lmtorderno = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId), 'lmtorderno');
-  return _uniq([
-    ...shares.rows.map((a) => a.json.shareholder),
-    ...lmtorderyes.rows.map((a) => a.json.creator),
-    ...lmtorderno.rows.map((a) => a.json.creator),
-  ]);
+  if (marketId) {
+    const shares = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId.toString()), 'shares');
+    const lmtorderyes = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId.toString()), 'lmtorderyes');
+    const lmtorderno = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId.toString()), 'lmtorderno');
+    return _uniq([
+      ...shares.rows.map((a) => a.json.shareholder),
+      ...lmtorderyes.rows.map((a) => a.json.creator),
+      ...lmtorderno.rows.map((a) => a.json.creator),
+    ]);
+  }
+  return [];
 };
 
 const sendMessagesToChats = (bot, chatIdsSubscribed, msg) => {
