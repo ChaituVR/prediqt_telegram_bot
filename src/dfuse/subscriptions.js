@@ -157,7 +157,7 @@ export const subscribeToDfuse = async (bot) => {
               market_id: marketId,
               shares,
             } = json;
-            let orderFilled = false;
+            let currentOrderSharesNotFilled = 0;
             // If an order is filled
             // eslint-disable-next-line consistent-return
             dbOps.forEach(async (dpOp) => {
@@ -167,9 +167,9 @@ export const subscribeToDfuse = async (bot) => {
                   const sharesRemaining = dpOp.newJSON.object.shares;
                   // First order
                   if (!dpOp.oldJSON.object || dpOp.oldJSON.object.creator !== creator) {
+                    currentOrderSharesNotFilled = sharesRemaining / 1000;
                     return false;
                   }
-                  orderFilled = true;
                   getSubscribedUserChatIds(creator).then((creatorsSubscribed) => {
                     const ordermsg = `✅️ Order filled with ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares bought: ${shares / 1000}\nNumber of shares pending: ${sharesRemaining ? (sharesRemaining / 1000) : 0}`;
                     sendMessagesToChats(bot, creatorsSubscribed, ordermsg);
@@ -180,7 +180,6 @@ export const subscribeToDfuse = async (bot) => {
                 const { creator, isbid } = dpOp.oldJSON.object;
                 if (creator && isbid) {
                   const sharesFilled = dpOp.oldJSON.object.shares;
-                  orderFilled = true;
                   getSubscribedUserChatIds(creator).then((creatorsSubscribed) => {
                     const ordermsg = `✅️ Order completely filled with ${sharesFilled / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares filled: ${sharesFilled / 1000}\nNumber of shares pending: 0`;
                     sendMessagesToChats(bot, creatorsSubscribed, ordermsg);
@@ -189,7 +188,8 @@ export const subscribeToDfuse = async (bot) => {
               }
             });
             const chatIdsSubscribed = await getSubscribedUserChatIds(user);
-            const ordermsg = `✅️ Order placed to "${buy ? 'Buy' : 'Sell'}" ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nMarket URL: ${URL}/market/${marketId}\nReferral by: ${referral},\nNumber of Shares: ${shares / 1000}\nOrder Filled: ${orderFilled ? 'Yes' : 'No'}`;
+            const orderShares = shares / 1000;
+            const ordermsg = `✅️ Order placed to "${buy ? 'Buy' : 'Sell'}" ${orderShares} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nMarket URL: ${URL}/market/${marketId}\nReferral by: ${referral},\nNumber of Shares: ${shares / 1000}\nNumber of shares filled: ${currentOrderSharesNotFilled ? orderShares - currentOrderSharesNotFilled : orderShares}\nNumber of shares pending: ${currentOrderSharesNotFilled || 0}`;
             sendMessagesToChats(bot, chatIdsSubscribed, ordermsg);
           } else if (name === 'claimshares') {
             const {
