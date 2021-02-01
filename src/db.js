@@ -46,6 +46,15 @@ export const getSubscribedUserChatIds = (accountName) => new Promise((resolve, r
   });
 });
 
+export const getSubscribedUserChatIdsMulitple = (accountNames) => new Promise((resolve, reject) => {
+  pool.query(`SELECT * from users WHERE subscriptions && '{${accountNames.join(',d')}}';`, (error, results) => {
+    if (error) {
+      return reject(error);
+    }
+    return resolve(_has(results, 'rows') ? results.rows.map((a) => a.id) : null);
+  });
+});
+
 export const createUser = (id, username) => new Promise((resolve, reject) => {
   pool.query('INSERT INTO users (id, username) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, username], (error, results) => {
     if (error) {

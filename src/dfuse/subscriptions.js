@@ -1,10 +1,34 @@
+import eosjsAccountName from 'eosjs-account-name';
+import _uniq from 'lodash/uniq';
 import {
-  getAllUserChatIds,
+  // getAllUserChatIds,
   getSubscribedUserChatIds,
+  getSubscribedUserChatIdsMulitple,
 } from '../db';
 import dfuseClient from './client';
 
 const URL = process.env.NETWORK === 'kylin' ? process.env.PUBLIC_URL_KYLIN : process.env.PUBLIC_URL;
+
+const getMarketParticipants = async (marketId) => {
+  const shares = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId), 'shares');
+  const lmtorderyes = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId), 'lmtorderyes');
+  const lmtorderno = await dfuseClient.stateTable('prediqtpedia', eosjsAccountName.uint64ToName(marketId), 'lmtorderno');
+  return _uniq([
+    ...shares.rows.map((a) => a.json.shareholder),
+    ...lmtorderyes.rows.map((a) => a.json.creator),
+    ...lmtorderno.rows.map((a) => a.json.creator),
+  ]);
+};
+
+const sendMessagesToChats = (bot, chatIdsSubscribed, msg) => {
+  // eslint-disable-next-line no-console
+  console.info(msg);
+  chatIdsSubscribed.forEach((id) => {
+    bot.telegram.sendMessage(id, msg, {
+      disable_web_page_preview: true,
+    });
+  });
+};
 
 // eslint-disable-next-line import/prefer-default-export
 export const subscribeToDfuse = async (bot) => {
@@ -41,7 +65,7 @@ export const subscribeToDfuse = async (bot) => {
       if (message.type === 'data') {
         const data = message.data.searchTransactionsForward;
         const actions = data.trace.matchingActions;
-        const allChatIds = await getAllUserChatIds();
+        // const allChatIds = await getAllUserChatIds();
 
         actions.map(async ({
           json,
@@ -54,18 +78,62 @@ export const subscribeToDfuse = async (bot) => {
           if (name === 'propmarket') {
             const {
               resolver,
+              creator,
             } = json;
             const marketId = dbOps[1].newJSON.object.id;
             if (marketId) {
-              msg = `✅️ Market Created [ Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
+              msg = `✅️ Market Created [ Creator: ${creator}, Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
+              // send only to creator and resolver
+              const chatIdsSubscribed = await getSubscribedUserChatIdsMulitple(
+                _uniq([creator, resolver]),
+              );
+              sendMessagesToChats(bot, chatIdsSubscribed, msg);
+              return true;
             }
-          } else if (name === 'createmarket') {
+          } else if (name === 'mktend') {
             const {
-              creator,
-              ipfs,
-              timeIn,
+              market_id: marketId,
+              sharetype,
             } = json;
-            msg = `⚡️ Market created [ Creator: ${creator}, IPFS: ${ipfs} Time: ${timeIn} ]`;
+            msg = `☄️ Market Ended. \n\n Result: ${sharetype ? 'YES' : 'NO'}, Link: ${URL}/market/${marketId}`;
+            const sendAlertToAccounts = await getMarketParticipants(marketId);
+            const chatIdsSubscribed = await getSubscribedUserChatIdsMulitple(sendAlertToAccounts);
+            sendMessagesToChats(bot, chatIdsSubscribed, msg);
+            return true;
+          } else if (name === 'mktinvalid') {
+            const {
+              market_id: marketId,
+              memo,
+            } = json;
+            msg = `🥀️ Market Invalid [ Id: ${marketId}, Memo: ${memo}, URL: ${URL}/market/${marketId} ]`;
+            const sendAlertToAccounts = await getMarketParticipants(marketId);
+            const chatIdsSubscribed = await getSubscribedUserChatIdsMulitple(sendAlertToAccounts);
+            sendMessagesToChats(bot, chatIdsSubscribed, msg);
+            return true;
+          } else if (name === 'acceptmarket') {
+            const {
+              resolver,
+              market_id: marketId,
+            } = json;
+            msg = `✅️ Market Accepted [ Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
+            const sendAlertToAccounts = await getMarketParticipants(marketId);
+            const chatIdsSubscribed = await getSubscribedUserChatIdsMulitple(
+              _uniq([...sendAlertToAccounts, resolver]),
+            );
+            sendMessagesToChats(bot, chatIdsSubscribed, msg);
+            return true;
+          } else if (name === 'rejectmarket') {
+            const {
+              resolver,
+              market_id: marketId,
+            } = json;
+            msg = `❌️ Market Rejected [ Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
+            const sendAlertToAccounts = await getMarketParticipants(marketId);
+            const chatIdsSubscribed = await getSubscribedUserChatIdsMulitple(
+              _uniq([...sendAlertToAccounts, resolver]),
+            );
+            sendMessagesToChats(bot, chatIdsSubscribed, msg);
+            return true;
           } else if (name === 'mktresolve') {
             const {
               resolver,
@@ -73,45 +141,11 @@ export const subscribeToDfuse = async (bot) => {
               sharetype,
             } = json;
             msg = `☄️ Market Resolved by: ${resolver}, Result: ${sharetype ? 'YES' : 'NO'}, Link: ${URL}/market/${marketId}`;
-          } else if (name === 'mktend') {
-            const {
-              market_id: marketId,
-              sharetype,
-            } = json;
-            msg = `☄️ Market Ended. \n\n Result: ${sharetype ? 'YES' : 'NO'}, Link: ${URL}/market/${marketId}`;
-          } else if (name === 'mktinvalid') {
-            const {
-              market_id: marketId,
-              memo,
-            } = json;
-            msg = `🥀️ Market Invalid [ Id: ${marketId}, Memo: ${memo}, URL: ${URL}/market/${marketId} ]`;
-          } else if (name === 'acceptmarket') {
-            const {
-              resolver,
-              market_id: marketId,
-            } = json;
-            msg = `✅️ Market Accepted [ Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
-          } else if (name === 'rejectmarket') {
-            const {
-              resolver,
-              market_id: marketId,
-            } = json;
-            msg = `❌️ Market Rejected [ Resolver: ${resolver}, Id: ${marketId}], URL: ${URL}/market/${marketId} ]`;
-          }
-
-          if (msg) {
-            // eslint-disable-next-line no-console
-            console.info(msg);
-            allChatIds.forEach((id) => {
-              bot.telegram.sendMessage(id, msg, {
-                disable_web_page_preview: true,
-              });
-            });
+            const sendAlertToAccounts = await getMarketParticipants(marketId);
+            const chatIdsSubscribed = await getSubscribedUserChatIdsMulitple(sendAlertToAccounts);
+            sendMessagesToChats(bot, chatIdsSubscribed, msg);
             return true;
-          }
-
-          // Orders
-          if (name === 'lmtorderyes' || name === 'lmtorderno') {
+          } else if (name === 'lmtorderyes' || name === 'lmtorderno') {
             const {
               user,
               buy,
@@ -122,11 +156,8 @@ export const subscribeToDfuse = async (bot) => {
             } = json;
             msg = `✅️ Order placed to "${buy ? 'Buy' : 'Sell'}" ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nMarket URL: ${URL}/market/${marketId}\nReferral by: ${referral},\nNumber of Shares: ${shares / 1000}`;
             const chatIdsSubscribed = await getSubscribedUserChatIds(user);
-            chatIdsSubscribed.forEach((id) => {
-              bot.telegram.sendMessage(id, msg, {
-                disable_web_page_preview: true,
-              });
-            });
+            sendMessagesToChats(bot, chatIdsSubscribed, msg);
+
             // If an order is filled
             // eslint-disable-next-line consistent-return
             dbOps.forEach(async (dpOp) => {
@@ -140,11 +171,7 @@ export const subscribeToDfuse = async (bot) => {
                   }
                   msg = `✅️ Order filled with ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares bought: ${shares / 1000}\nNumber of shares pending: ${sharesRemaining ? (sharesRemaining / 1000) : 0}`;
                   const creatorsSubscribed = await getSubscribedUserChatIds(creator);
-                  creatorsSubscribed.forEach((id) => {
-                    bot.telegram.sendMessage(id, msg, {
-                      disable_web_page_preview: true,
-                    });
-                  });
+                  sendMessagesToChats(bot, creatorsSubscribed, msg);
                 }
               } else if (dpOp.oldJSON.object) {
                 // if order is fully filled
@@ -153,11 +180,7 @@ export const subscribeToDfuse = async (bot) => {
                   const sharesFilled = dpOp.oldJSON.object.shares;
                   msg = `✅️ Order completely filled with ${sharesFilled / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares filled: ${sharesFilled / 1000}\nNumber of shares pending: 0`;
                   const creatorsSubscribed = await getSubscribedUserChatIds(creator);
-                  creatorsSubscribed.forEach((id) => {
-                    bot.telegram.sendMessage(id, msg, {
-                      disable_web_page_preview: true,
-                    });
-                  });
+                  sendMessagesToChats(bot, creatorsSubscribed, msg);
                 }
               }
             });
@@ -168,11 +191,7 @@ export const subscribeToDfuse = async (bot) => {
             } = json;
             msg = `Shares are Claimed/Burned for Market ${URL}/market/${marketId} and sent to account ${user}`;
             const chatIdsSubscribed = await getSubscribedUserChatIds(user);
-            chatIdsSubscribed.forEach((id) => {
-              bot.telegram.sendMessage(id, msg, {
-                disable_web_page_preview: true,
-              });
-            });
+            sendMessagesToChats(bot, chatIdsSubscribed, msg);
           }
 
           return false;
