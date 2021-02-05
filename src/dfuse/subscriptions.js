@@ -36,7 +36,7 @@ const sendMessagesToChats = (bot, chatIdsSubscribed, msg) => {
 // eslint-disable-next-line import/prefer-default-export
 export const subscribeToDfuse = async (bot) => {
   const streamPredIQt = `subscription($cursor: String!) {
-    searchTransactionsForward(query: "receiver:prediqtpedia (action:propmarket OR action:createmarket OR action:mktend OR action:mktresolve OR action:mktinvalid OR action:acceptmarket OR action:rejectmarket OR action:lmtorderyes OR action:lmtorderno OR action:claimshares)", cursor: $cursor) {
+    searchTransactionsForward(query: "receiver:prediqtpedia (action:propmarket OR action:createmarket OR action:mktend OR action:mktresolve OR action:mktinvalid OR action:acceptmarket OR action:rejectmarket OR action:lmtorderyes OR action:lmtorderno OR action:claimshares OR action:cnclorderyes OR action:cnclorderno OR action:trnsfrshares)", cursor: $cursor) {
         undo cursor
         trace {
             block {
@@ -162,8 +162,8 @@ export const subscribeToDfuse = async (bot) => {
             // eslint-disable-next-line consistent-return
             dbOps.forEach(async (dpOp) => {
               if (dpOp.newJSON.object) {
-                const { creator, isbid } = dpOp.newJSON.object;
-                if (creator && isbid) {
+                const { creator } = dpOp.newJSON.object;
+                if (creator) {
                   const sharesRemaining = dpOp.newJSON.object.shares;
                   // First order
                   if (!dpOp.oldJSON.object || dpOp.oldJSON.object.creator !== creator) {
@@ -177,8 +177,8 @@ export const subscribeToDfuse = async (bot) => {
                 }
               } else if (dpOp.oldJSON.object) {
                 // if order is fully filled
-                const { creator, isbid } = dpOp.oldJSON.object;
-                if (creator && isbid) {
+                const { creator } = dpOp.oldJSON.object;
+                if (creator) {
                   const sharesFilled = dpOp.oldJSON.object.shares;
                   getSubscribedUserChatIds(creator).then((creatorsSubscribed) => {
                     const ordermsg = `✅️ Order completely filled with ${sharesFilled / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares filled: ${sharesFilled / 1000}\nNumber of shares pending: 0`;
@@ -189,15 +189,50 @@ export const subscribeToDfuse = async (bot) => {
             });
             const chatIdsSubscribed = await getSubscribedUserChatIds(user);
             const orderShares = shares / 1000;
-            const ordermsg = `✅️ Order placed to "${buy ? 'Buy' : 'Sell'}" ${orderShares} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nMarket URL: ${URL}/market/${marketId}\nReferral by: ${referral},\nNumber of Shares: ${shares / 1000}\nNumber of shares filled: ${currentOrderSharesNotFilled ? orderShares - currentOrderSharesNotFilled : orderShares}\nNumber of shares pending: ${currentOrderSharesNotFilled || 0}`;
+            let ordermsg = `✅️ Order placed to "Buy" ${orderShares} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nMarket URL: ${URL}/market/${marketId}\nReferral by: ${referral}\nNumber of Shares: ${shares / 1000}\nNumber of shares filled: ${currentOrderSharesNotFilled ? orderShares - currentOrderSharesNotFilled : orderShares}\nNumber of shares pending: ${currentOrderSharesNotFilled || 0}`;
+            if (!buy) {
+              ordermsg = `✅️ Order placed to "Sell" ${orderShares} "${name.indexOf('yes') > -1 ? 'NO' : 'YES'}" shares by ${user}\n\nPrice: ${limit}\nMarket URL: ${URL}/market/${marketId}\nNumber of Shares: ${shares / 1000}\nNumber of shares filled: ${currentOrderSharesNotFilled || 0}\nNumber of shares pending: ${currentOrderSharesNotFilled ? orderShares - currentOrderSharesNotFilled : orderShares}`;
+            }
             sendMessagesToChats(bot, chatIdsSubscribed, ordermsg);
+          } else if (name === 'cnclorderyes' || name === 'cnclorderno') {
+            const {
+              user,
+              market_id: marketId,
+            } = json;
+            // eslint-disable-next-line consistent-return
+            dbOps.forEach(async (dpOp) => {
+              if (dpOp.oldJSON.object) {
+                const {
+                  creator, id, limit, shares,
+                } = dpOp.oldJSON.object;
+                if (creator) {
+                  getSubscribedUserChatIds(creator).then((creatorsSubscribed) => {
+                    const ordermsg = `✅️ Order cancelled with ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nOrder Id: ${id}\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares not filled: ${shares / 1000}\n`;
+                    sendMessagesToChats(bot, creatorsSubscribed, ordermsg);
+                  });
+                }
+              }
+            });
           } else if (name === 'claimshares') {
             const {
               user,
               market_id: marketId,
             } = json;
-            msg = `Shares are Claimed/Burned for Market ${URL}/market/${marketId} and sent to account ${user}`;
+            msg = `🌟 Shares are Claimed/Burned for Market ${URL}/market/${marketId} and sent to account ${user}`;
             const chatIdsSubscribed = await getSubscribedUserChatIds(user);
+            sendMessagesToChats(bot, chatIdsSubscribed, msg);
+          } else if (name === 'trnsfrshares') {
+            const {
+              from,
+              to,
+              shares,
+              sharetype,
+              market_id: marketId,
+            } = json;
+            msg = `🌟 ${shares / 1000} "${sharetype ? 'YES' : 'NO'}" shares transfered from ${from} to ${to} for Market ${URL}/market/${marketId}`;
+            const chatIdsSubscribed = await getSubscribedUserChatIdsMulitple(
+              _uniq([from, to]),
+            );
             sendMessagesToChats(bot, chatIdsSubscribed, msg);
           }
 
