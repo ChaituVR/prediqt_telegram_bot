@@ -9,6 +9,8 @@ export const startChat = async (ctx) => {
     if (ctx.from.is_bot) {
       await ctx.reply('Not supported for Bot Users');
     }
+    console.log("_--------------------------------")
+    console.log(ctx.from)
     await createUser(ctx.from.id, ctx.from.username);
     await ctx.reply(`Hey ${ctx.from.first_name || ctx.from.username}! Welcome to PredIQt telegram bot. I can monitor your selected PredIQt accounts and send you alerts on transactions as they happen.`);
     await ctx.reply('Select an option below to continue', mainMenuKeyboard.reply());
