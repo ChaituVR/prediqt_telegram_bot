@@ -7,6 +7,9 @@ global.WebSocket = require('ws');
 const dfuseClient = createDfuseClient({
   authentication: false,
   network: process.env.NETWORK === 'kylin' ? 'kylin.dfuse.eosnation.io' : 'eos.dfuse.eosnation.io',
+  StreamClientOptions: {
+    autoDisconnectSocket: false,
+  },
 });
 
 export default dfuseClient;
