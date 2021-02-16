@@ -203,11 +203,14 @@ export const subscribeToDfuse = async (bot) => {
             dbOps.forEach(async (dpOp) => {
               if (dpOp.oldJSON.object) {
                 const {
-                  creator, id, limit, shares,
+                  creator, id, limit, shares, isbid
                 } = dpOp.oldJSON.object;
                 if (creator) {
                   getSubscribedUserChatIds(creator).then((creatorsSubscribed) => {
-                    const ordermsg = `✅️ Order cancelled with ${shares / 1000} "${name.indexOf('yes') > -1 ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nOrder Id: ${id}\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares not filled: ${shares / 1000}\n`;
+                    let ordermsg = `✅️ Order cancelled with ${shares / 1000} "${(name.indexOf('yes') > -1) ? 'YES' : 'NO'}" shares by ${user}\n\nLimit: ${limit}\nOrder Id: ${id}\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares not filled: ${shares / 1000}\n`;
+                    if (!isbid) {
+                      ordermsg = `✅️ Order cancelled with ${shares / 1000} "${(name.indexOf('yes') > -1) ? 'NO' : 'YES'}" shares by ${user}\n\nLimit: ${limit}\nOrder Id: ${id}\nCreator Name: ${creator}\nMarket URL: ${URL}/market/${marketId}\nNumber of shares not filled: ${shares / 1000}\n`;
+                    }
                     sendMessagesToChats(bot, creatorsSubscribed, ordermsg);
                   });
                 }
