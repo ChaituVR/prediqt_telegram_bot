@@ -25,8 +25,16 @@ export default (bot) => {
   bot.help((ctx) => ctx.reply('Type `/start` command to go to main menu'));
 
   // Main menu actions
-  bot.hears(featuresAndTipsText, (ctx) => ctx.reply('👍'));
-  bot.hears(aboutAndFeedbackText, (ctx) => ctx.reply('👍'));
+  bot.hears(featuresAndTipsText, (ctx) => ctx.reply(`Features:
+
+1. Get real-time alerts on Telegram for all the transactions related to PrediQT
+2. Alerts when Orders are placed, cancelled, partially filled and filled
+3. Alerts for markets you are participating in, when created, ended, resolved, accepted and rejected
+4. Alerts when Shares are available to claim, when shares are claimed and transferred to another account
+3. No Spam, Alerts are sent for accounts that you are interested in
+4. Monitor any account
+  `));
+  bot.hears(aboutAndFeedbackText, (ctx) => ctx.reply('PrediQT is Everipedia\'s Knowledge Market \n\nTwitter: https://twitter.com/PredIQt_Network\nInstagram:https://www.instagram.com/_prediqt_/\nTelegram: https://t.me/prediqt '));
   bot.hears(moniterPredIQtAccountsText, moniterPredIQtAccounts);
 
   // secondary menu actions
